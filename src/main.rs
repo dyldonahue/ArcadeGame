@@ -6,10 +6,19 @@ mod grid;
 
 struct State {
     dt: std::time::Duration,
-    bg_mesh: ggez::graphics::Mesh,
-    bg_batch: ggez::graphics::InstanceArray
+    grid_drawn: bool
 }
 
+impl State {
+    fn new(ctx: &mut Context) -> State {
+        let s = State {
+            dt: std::time::Duration::new(0, 0),
+            grid_drawn: false
+        };
+        s
+    }
+
+}
 fn main() {
 
     let c = conf::Conf::new();
@@ -17,13 +26,8 @@ fn main() {
         .default_conf(c)
         .build()
         .unwrap();
-    let state = State {
-        dt: std::time::Duration::new(0, 0),
-        bg_mesh: grid::create_grid(&mut ctx, 10, 10, ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0)),
-        bg_batch: grid::batch_grid(&mut ctx)
-           
-        };
-        event::run(ctx, event_loop, state);
+    let state = State::new(&mut ctx);
+    event::run(ctx, event_loop, state);
 }
 
 impl ggez::event::EventHandler<GameError> for State {
@@ -32,8 +36,10 @@ impl ggez::event::EventHandler<GameError> for State {
         Ok(())
     }
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::WHITE);
-        canvas.draw_instanced_mesh(self.bg_mesh.clone(), &self.bg_batch, graphics::DrawParam::new().dest(Vec2::new(5.0, 8.0)));
+        if !self.grid_drawn {
+            grid::draw_grid(ctx, grid::NUM_HORZ, grid::NUM_VERT)?;
+            self.grid_drawn = true;
+        }
         Ok(())
     }
 

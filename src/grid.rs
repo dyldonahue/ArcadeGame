@@ -1,63 +1,48 @@
 use ggez::graphics::*;
-use ggez::GameResult;
 use ggez::Context;
+use ggez::GameResult;
 use ggez::mint;
 use crate::glam::*;
+use rand::Rng;
 
-const CELL_SIZE : f32 = 16.0;
+const CELL_SIZE : f32 = 32.0;
+pub const NUM_VERT : i32 = 19;
+pub const NUM_HORZ : i32 = 25;
 
-trait Grid {
-    fn grid(&mut self, width: i32, height: i32, color: Color) -> &mut Self;
-}
+pub fn draw_grid(ctx: &mut Context, width: i32, height: i32) -> GameResult{
+    let red = rgba_encoder(255, 0, 0, 1.0);
+    let blue = rgba_encoder(0, 0, 255, 1.0);
+    let yellow = rgba_encoder(255, 255, 0, 1.0);
+    let green = rgba_encoder(0, 255, 0, 1.0);
+    let purple = rgba_encoder(128, 0, 128, 1.0);
 
-impl Grid for MeshBuilder {
-    fn grid(&mut self, width: i32, height: i32, color: Color) -> &mut Self {
-        let mut lines = vec![];
+    let colors = [red, blue, yellow, green, purple];
 
-        // horizontals
-        for i in 0..=height {
-            let y = i as f32 * CELL_SIZE;
-            lines.push(mint::Point2 { x: 0.0, y: y });
-            lines.push(mint::Point2 { x: width as f32 * CELL_SIZE, y: y });
+    let mut rng = rand::thread_rng();
+
+    let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
+    let mut rect = Rect::new(0.0, 0.0, CELL_SIZE, CELL_SIZE);
+
+    for i in 5..height {
+        let y = i as f32 * CELL_SIZE;
+        rect.y = y;
+        for j in 0..width {
+            let x = j as f32 * CELL_SIZE;
+            rect.x = x;
+            let col = colors[rng.gen_range(0..=4)];
+            canvas.draw(&Quad,
+                        DrawParam::new()
+                        .dest(rect.point())
+                        .scale(rect.size())
+                        .color(col));
+            
         }
-        
-        // verticals
-        for i in 0..=width {
-            let x = i as f32 * CELL_SIZE;
-            lines.push(mint::Point2 { x: x, y: 0.0 }); 
-            lines.push(mint::Point2 { x: x, y: height as f32 * CELL_SIZE });
-        }
-
-        let err = self.polyline(DrawMode::stroke(1.0), &lines, color); // TODO handle error (compiler didn't like when i ignored it)
-        self
     }
-}
-
-pub fn create_grid(ctx: &mut Context, width: i32, height: i32, color: Color) -> Mesh {
-    let mut mesh_builder = MeshBuilder::new();
-    mesh_builder.grid(width, height, color);
-    let mesh_data = mesh_builder.build();
-    let mesh = Mesh::from_data(&ctx.gfx, mesh_data);
-    mesh
+    canvas.finish(ctx)?;
+    Ok(())
 
 }
 
-pub fn batch_grid(ctx: &mut Context) -> InstanceArray {
-    
-    let total_size = ctx.gfx.drawable_size();
-    let xtems = (total_size.0 / 16.0) as usize;
-        let ytems = (total_size.1 / 16.0) as usize;
-        let mut mesh_batch = InstanceArray::new(ctx, None);
-        mesh_batch.resize(ctx, xtems * ytems);
-
-        mesh_batch.set((0..xtems).flat_map(|x| {
-            (0..ytems).map(move |y| {
-                let x = x as f32;
-                let y = y as f32;
-        
-                DrawParam::new()
-                    .dest(Vec2::new(x * 16.0, y * 16.0))
-            })
-        }));
-        mesh_batch
+fn rgba_encoder (r: u8, g: u8, b: u8, a: f32) -> Color {
+    Color::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a)
 }
